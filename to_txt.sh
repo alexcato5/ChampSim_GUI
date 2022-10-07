@@ -2,10 +2,8 @@
 
 # PARAMETERS:
 
-output_filename=results.txt;
+output_filename=./results/results.txt;
 simulation_command=$@; # Uses program arguments as command
-
-
 
 # Create and clean output file
 touch $output_filename;
