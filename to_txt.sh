@@ -2,12 +2,21 @@
 
 # PARAMETERS:
 
-output_filename=./results/results.txt;
+filename=./results/results;
+text_output_filename=${filename}.txt;
+csv_output_filename=${filename}.csv;
+
+
 simulation_command=$@; # Uses program arguments as command
 
-# Create and clean output file
-touch $output_filename;
-$NULL | tee $output_filename;
+# Create and clean output files
+touch $text_output_filename;
+$NULL | tee $text_output_filename;
+touch $csv_output_filename;
+$NULL | tee $csv_output_filename;
 
-# Run Simulator and redirect output to file
-$simulation_command | tee -a $output_filename;
+# Run Simulator and redirect output to text file
+$simulation_command >> $text_output_filename;
+
+# Run python script to convert output text file to CSV file
+#python to_csv.py

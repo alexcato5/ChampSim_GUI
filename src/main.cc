@@ -316,7 +316,7 @@ int main(int argc, char** argv)
   cout << endl << "*** ChampSim Multicore Out-of-Order Simulator ***" << endl << endl;
 
   // initialize knobs
-  uint8_t show_heartbeat = 1;
+  uint8_t show_heartbeat = 0;
 
   // check to see if knobs changed using getopt_long()
   int traces_encountered = 0;
@@ -408,10 +408,12 @@ int main(int argc, char** argv)
 
 // Atención
   // After cycle_interval cycles ChampSim prints the results and resets the counters
-  // long long int cycle_interval = 100; 
-  
+ 
   // Cycle counting
   uint64_t cycle_number = 0;
+
+  // Detection of last cycle for 
+  bool last_cycle = false;
 
   // simulation entry point
   while (std::any_of(std::begin(simulation_complete), std::end(simulation_complete), std::logical_not<uint8_t>())) {
@@ -470,10 +472,11 @@ int main(int argc, char** argv)
       if ((warmup_complete[i] == 0) && (ooo_cpu[i]->num_retired > warmup_instructions)) {
         warmup_complete[i] = 1;
         all_warmup_complete++;
-      }
+      }                 
       if (all_warmup_complete == NUM_CPUS) { // this part is called only once
                                              // when all cores are warmed up
         all_warmup_complete++;
+        cycle_number = 0;
         finish_warmup();
       }
 
@@ -493,37 +496,31 @@ int main(int argc, char** argv)
       }
     }
 
-    if (cycle_number == cycle_interval) {
+    if (cycle_number == cycle_interval || last_cycle) {
 
       cycle_number = 0;
-      // Atención
-      /*
-      uint64_t elapsed_second = (uint64_t)(time(NULL) - start_time), elapsed_minute = elapsed_second / 60, elapsed_hour = elapsed_minute / 60;
-      elapsed_minute -= elapsed_hour * 60;
-      elapsed_second -= (elapsed_hour * 3600 + elapsed_minute * 60);
-      */
+      cout << "Warmup Instructions: " << warmup_instructions << endl;
+      cout << "Simulation Instructions: " << simulation_instructions << endl;
+      cout << "Number of CPUs: " << NUM_CPUS << endl;
 
-        cout << "Warmup Instructions: " << warmup_instructions << endl;
-        cout << "Simulation Instructions: " << simulation_instructions << endl;
-        cout << "Number of CPUs: " << NUM_CPUS << endl;
+      long long int dram_size = DRAM_CHANNELS * DRAM_RANKS * DRAM_BANKS * DRAM_ROWS * DRAM_COLUMNS * BLOCK_SIZE / 1024 / 1024; // in MiB
+      std::cout << "Off-chip DRAM Size: ";
+      if (dram_size > 1024)
+        std::cout << dram_size / 1024 << " GiB";
+      else
+        std::cout << dram_size << " MiB";
+      std::cout << " Channels: " << DRAM_CHANNELS << " Width: " << 8 * DRAM_CHANNEL_WIDTH << "-bit Data Rate: " << DRAM_IO_FREQ << " MT/s" << std::endl;
 
-        long long int dram_size = DRAM_CHANNELS * DRAM_RANKS * DRAM_BANKS * DRAM_ROWS * DRAM_COLUMNS * BLOCK_SIZE / 1024 / 1024; // in MiB
-        std::cout << "Off-chip DRAM Size: ";
-        if (dram_size > 1024)
-          std::cout << dram_size / 1024 << " GiB";
-        else
-          std::cout << dram_size << " MiB";
-        std::cout << " Channels: " << DRAM_CHANNELS << " Width: " << 8 * DRAM_CHANNEL_WIDTH << "-bit Data Rate: " << DRAM_IO_FREQ << " MT/s" << std::endl;
+      std::cout << std::endl;
+      std::cout << "VirtualMemory physical capacity: " << std::size(vmem.ppage_free_list) * vmem.page_size;
+      std::cout << " num_ppages: " << std::size(vmem.ppage_free_list) << std::endl;
+      std::cout << "VirtualMemory page size: " << PAGE_SIZE << " log2_page_size: " << LOG2_PAGE_SIZE << std::endl;
 
-        std::cout << std::endl;
-        std::cout << "VirtualMemory physical capacity: " << std::size(vmem.ppage_free_list) * vmem.page_size;
-        std::cout << " num_ppages: " << std::size(vmem.ppage_free_list) << std::endl;
-        std::cout << "VirtualMemory page size: " << PAGE_SIZE << " log2_page_size: " << LOG2_PAGE_SIZE << std::endl;
-
-        std::cout << std::endl;
-        for (int i = optind; i < argc; i++) {
-          std::cout << "CPU " << traces.size() << " runs " << argv[i] << std::endl;
-        }
+      std::cout << std::endl;
+      uint32_t cpu_iterator = 0;
+      for (int i = optind; i < argc; i++) {
+        std::cout << "CPU " << cpu_iterator++ << " runs " << argv[i] << std::endl;
+      }
 
       cout << endl << "ChampSim completed all CPUs" << endl;
       if (NUM_CPUS > 1) {
@@ -555,7 +552,7 @@ int main(int argc, char** argv)
 
       #ifndef CRC2_COMPILE
         print_dram_stats();
-       print_branch_stats();
+        print_branch_stats();
       #endif
        
       // Reset counters:

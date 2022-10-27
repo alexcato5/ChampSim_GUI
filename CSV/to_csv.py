@@ -49,10 +49,11 @@ while i in range(0, len(list_colon), 1) and not found_cpu_number or not found_ch
 
 # Formatting lists to prepare for CSV printing
 for i in range(0, len(list_colon)):
-    list_colon[i][0] = list_colon[i][0].lower().replace("-bit ", "")
-    list_colon[i][0] = list_colon[i][0].lower().replace(" ", "_")
-    list_colon[i][0] = list_colon[i][0].lower().replace("-", "_")
-    list_colon[i][0] = list_colon[i][0].lower().replace("(", "")
+    list_element = list_colon[i][0]
+    list_colon[i][0] = list_element.lower().replace("-bit ", "")
+    list_colon[i][0] = list_element.lower().replace(" ", "_")
+    list_colon[i][0] = list_element.lower().replace("-", "_")
+    list_colon[i][0] = list_element.lower().replace("(", "")
 
 total_stats_index = 0
 interest_index = 0
