@@ -1,37 +1,61 @@
 import re
+import time
 import pandas as pd
-import os
 
+# Filename of the txt containing ChampSim's results
 filename = 'results'
 path_to_results = '../results/'
 
+# Execution time measurement
+start_time = time.time()
+
+# Read and store results in a single variable
 with open(path_to_results + filename + '.txt', 'r') as results:
     text = results.read()
 
-# Regex pattern definitions
-pattern_colon = r"(.+?)\:\s*((?:\d+\.?\d*|-\w?))\s*"
+# # # # #
+# Regex #
+# # # # #
+
+# Pattern definitions
+pattern_colon = r"(.+?)\:\s*((?:\d+\.?\d*\w-\d+|\d+\.?\d*|-\w?))\s*"
 pattern_trace_name = r"(\w+\s\d+\s\w+)\s.+/(.+)"
 pattern_branch_predictor = r"(\w+\s+\d+)\s+(\w+)\s+branch\s+predictor"
-pattern_time = r"(.+?\d+).+\:\s+(\d+\.?\d*\s*hr\s+\d+\.?\d*\s*min\s*\d+\.?\d*)\s+sec"
+pattern_final_times = r"(.+?\d+).+\:\s+(\d+\.?\d*\s*hr\s+\d+\.?\d*\s*min\s*\d+\.?\d*)\s+sec"
 pattern_invalid = r"(.+)\:\s*(-.*)"
+pattern_number_of_results = r"(ChampSim\s*completed)"
 
 # Regex find and store for all the text document
+
+# Contains all values present after a colon
 list_colon = re.findall(pattern_colon, text)
-list_colon = [list(tup) for tup in list_colon] # Convert to list of lists
+list_colon = [list(tup) for tup in list_colon]
 
+# Contains the trace filenames used in each of the CPUs
 list_trace_name = re.findall(pattern_trace_name, text)
-list_trace_name = [list(tup) for tup in list_trace_name] # Convert to list of lists
+list_trace_name = [list(tup) for tup in list_trace_name]
 
+# Contains the type of branch predictor used in each core
 list_branch_predictor = re.findall(pattern_branch_predictor, text)
-list_branch_predictor = [list(tup) for tup in list_branch_predictor] # Convert to list of lists
+list_branch_predictor = [list(tup) for tup in list_branch_predictor]
 
-list_time = re.findall(pattern_time, text)
-list_time = [list(tup) for tup in list_time] # Convert to list of lists
+# Contains the final execution times for warmup and simulation
+list_final_times = re.findall(pattern_final_times, text)
+list_final_times = [list(tup) for tup in list_final_times]
 
+# Stores the variables with a result of NaN across the results
 list_invalid = re.findall(pattern_invalid, text)
-list_invalid = [list(tup) for tup in list_invalid] # Convert to list of lists
+list_invalid = [list(tup) for tup in list_invalid]
 
-# Finding relevant variables: number of CPUs and number of DRAM channels
+# Contains a list of a repetitive token throughout the results file, in order to distinguish the number of iterations
+list_number_of_results = re.findall(pattern_number_of_results, text)
+list_number_of_results = [list(tup) for tup in list_number_of_results]
+
+# # # # # # # # # # # # # # # # # #
+# Find relevant system variables #
+# # # # # # # # # # # # # # # # #
+
+number_of_results = len(list_number_of_results)
 number_of_cpus = 0
 number_of_DRAM_channels = 0
 found_cpu_number = False
@@ -47,126 +71,189 @@ while i in range(0, len(list_colon), 1) and not found_cpu_number or not found_ch
         found_channel_number = True
     i = i + 1
 
-# Formatting lists to prepare for CSV printing
-for i in range(0, len(list_colon)):
-    list_element = list_colon[i][0]
-    list_colon[i][0] = list_element.lower().replace("-bit ", "")
-    list_colon[i][0] = list_element.lower().replace(" ", "_")
-    list_colon[i][0] = list_element.lower().replace("-", "_")
-    list_colon[i][0] = list_element.lower().replace("(", "")
+# Number of list_colon entries used for system information
+system_info_length = 11 + 4 * number_of_cpus
 
-total_stats_index = 0
-interest_index = 0
-starting_total_stats_index = total_stats_index
-saved_starting_total_stats_index = total_stats_index
-starting_interest_index = interest_index
+# Listing general system information
+list_system_info = list_colon[0:system_info_length]
+del list_colon[0:system_info_length]
 
-total_stats_length = 93 # Length of total stats per CPU in list_colon items
-interest_length = 90 # Length of region of interest per CPU in list_colon items
+# # # # # # # # # # # # # # # # # # # # # # # # #
+# Formatting lists to prepare for CSV printing #
+# # # # # # # # # # # # # # # # # # # # # # # #
+
+for i in range(0, system_info_length):
+    list_system_info[i][0] = list_system_info[i][0].lower().replace("-bit ", "")
+    list_system_info[i][0] = list_system_info[i][0].lower().replace(" ", "_")
+    list_system_info[i][0] = list_system_info[i][0].lower().replace("-", "_")
+    if i == 11:
+        for j in range(0, number_of_cpus):
+            if "cpu" not in list_system_info[i+4*j][0]:
+                list_system_info[i+4*j][0] = "cpu" + str(j) + "_" + list_system_info[i+4*j][0]
+                list_system_info[i+4*j+1][0] = "cpu" + str(j) + "_" + list_system_info[i+4*j+1][0]
+                list_system_info[i+4*j+2][0] = "cpu" + str(j) + "_" + list_system_info[i+4*j+2][0]
+                list_system_info[i+4*j+3][0] = "cpu" + str(j) + "_" + list_system_info[i+4*j+3][0]
+    list_system_info[i][0] = "system_info_" + list_system_info[i][0]
 
 for i in range(0, number_of_cpus):
+    list_trace_name[i][0] = list_trace_name[i][0].lower().replace(" ", "_")
+    list_branch_predictor[i][0] = list_branch_predictor[i][0].lower().replace(" ", "_") + "_branch_predictor"
+    list_final_times[i][0] = list_final_times[i][0].lower().replace(" ", "_") + "_time"
+    list_final_times[i + number_of_cpus][0] = list_final_times[i + number_of_cpus][0].lower().replace(" ", "_") + "_time"
 
-    list_trace_name[i][0] = list_trace_name[i][0].replace(" ", "_")
+for i in range(0, len(list_colon)):
+    list_colon[i][0] = list_colon[i][0].lower().replace(" ", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("-", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("(", "")
 
-    list_branch_predictor[i][0] = list_branch_predictor[i][0].replace(" ", "_") + "_branch_predictor"
+# Define the number of list_colon entries taken by stats
+warmup_finished_stats_length = 3 * number_of_cpus
+finished_stats_length = 4 * number_of_cpus
+branch_stats_length = 9 * number_of_cpus
 
-    list_time[i][0] = list_time[i][0].replace(" ", "_")
-    list_time[i + number_of_cpus][0] = list_time[i + number_of_cpus][0].replace(" ", "_")
+# To be defined later
+total_stats_length = 0
+roi_stats_length = 0
 
-    found_basic = False
-    found_warmup = False
-    found_finished = False
-    reached_total_stats = False
-    reached_interest = False
+# When this happens, ChampSim prints an extra parameter
+if number_of_DRAM_channels > 1:
+    dram_stats_length = 6 * number_of_DRAM_channels + 1
+else:
+    dram_stats_length = 6 * number_of_DRAM_channels
 
-    for j in range(0, len(list_colon)):
-        if "cpu" not in list_colon[j][0] and "basic" in list_colon[j][0] and not found_basic:
-            list_colon[j][0] = list_colon[j][0].replace("basic", "cpu" + str(i) + "_basic")
-            list_colon[j+1][0] = list_colon[j+1][0].replace("ways", "cpu" + str(i) + "_basic_btb_ways")
-            list_colon[j+2][0] = list_colon[j+2][0].replace("indirect", "cpu" + str(i) + "_basic_btb_indirect")
-            list_colon[j+3][0] = list_colon[j+3][0].replace("ras", "cpu" + str(i) + "_basic_btb_ras")
-            found_basic = True
+# Declaration of results lists
+list_total_stats = []
+list_roi_stats = []
+list_dram_stats = []
+list_branch_prediction_stats = []
+list_sim_times = [['simulation_time', '']]
+list_warmup_finished_stats = [[None, None]]*warmup_finished_stats_length
+list_finished_stats = [[None, None]]*finished_stats_length
 
-        if "warmup_complete" in list_colon[j][0] and not found_warmup and "cpu" not in list_colon[j+1][0]:
-            list_colon[j+1][0] = list_colon[j+1][0].replace("cycles", "cpu" + str(i) + "_warmup_cycles")
-            list_colon[j+2][0] = list_colon[j+2][0].replace("simulation", "cpu" + str(i) + "_warmup_simulation")
-            found_warmup = True
+# Dataframe declaration
+results_df = pd.DataFrame()
 
-        if "finished_cpu" in list_colon[j][0] and not found_finished and "cpu" not in list_colon[j+1][0]:
-            list_colon[j+1][0] = list_colon[j+1][0].replace("cycles", "cpu" + str(i) + "_finished_cycles")
-            list_colon[j+2][0] = list_colon[j+2][0].replace("cumulative", "cpu" + str(i) + "_finished_cumulative")
-            list_colon[j+3][0] = list_colon[j+3][0].replace("simulation", "cpu" + str(i) + "_finished_simulation")
-            found_finished = True
-            reached_total_stats = True
-            if i == 0:
-                total_stats_index = j + 4 * number_of_cpus
-                saved_starting_total_stats_index = starting_total_stats_index
-            else:
-                total_stats_index = j + 4 * number_of_cpus + total_stats_length - 4
-            starting_total_stats_index = total_stats_index
+for i in range(0, number_of_results):
+    total_stats_length = 36 * 3 * number_of_cpus
+    roi_stats_length = 54 * 3 * number_of_cpus + 2 * number_of_cpus
+    found_llc_stats = True
 
-        if reached_total_stats and total_stats_index < starting_total_stats_index + total_stats_length:
-            if "cpu" in list_colon[total_stats_index][0] and "total_stats" not in list_colon[total_stats_index][0]:
-                list_colon[total_stats_index][0] = "total_stats" + "_" + list_colon[total_stats_index][0]
-            if "cpu" not in list_colon[total_stats_index][0] and "total_stats" not in list_colon[total_stats_index][0]:
-                list_colon[total_stats_index][0] = "total_stats_cpu" + str(i) + "_" + list_colon[total_stats_index][0]
-            total_stats_index = total_stats_index + 1
+    if "warmup" in list_colon[0][0].lower():
+        list_warmup_finished_stats = list_colon[0:warmup_finished_stats_length]
+        del list_colon[0:warmup_finished_stats_length]
+        for j in range(0, number_of_cpus):
+            list_warmup_finished_stats[1 + j * 3][0] = "warmup_complete_cpu_" + str(j) + "_" + list_warmup_finished_stats[j * 3 + 1][0]
+            list_warmup_finished_stats[2 + j * 3] = list_final_times[0]
+            del list_final_times[0]
+    if i == 0:
+        list_total_stats = list_colon[0:total_stats_length]
+        del list_colon[0:total_stats_length]
+        list_roi_stats = list_colon[0:roi_stats_length]
+        del list_colon[0:roi_stats_length]
+        list_dram_stats = list_colon[0:dram_stats_length]
+        del list_colon[0:dram_stats_length]
+        list_branch_prediction_stats = list_colon[0:branch_stats_length]
+        del list_colon[0:branch_stats_length]
+        list_sim_times[0][1] = list_colon[0][1]
+        del list_colon[0]
 
-        '''Arreglar
-        temp = total_stats_index
-        if temp == total_stats_length + starting_total_stats_index:
-            reached_total_stats = False
-            reached_interest = True
-            interest_index = total_stats_length * ( number_of_cpus - i ) + saved_starting_total_stats_index
-            starting_interest_index = interest_index
-            temp = temp + 1
+        # Fill Dataframe
+        results_df = pd.concat([results_df, pd.DataFrame(list_system_info, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_branch_predictor, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_total_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_roi_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_dram_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_branch_prediction_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_sim_times, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_warmup_finished_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_finished_stats, columns=['Parameter', f'Value at tick {i+1}'])])
 
-        if reached_interest and interest_index < starting_interest_index + interest_length:
-            if "cpu" in list_colon[interest_index][0] and "interest" not in list_colon[interest_index][0]:
-                list_colon[interest_index][0] = "interest_" + list_colon[interest_index][0]
-            if "cpu" not in list_colon[interest_index][0] and "interest" not in list_colon[interest_index][0]:
-                list_colon[interest_index][0] = "interest_cpu" + str(i) + "_" + list_colon[interest_index][0]
-            interest_index = interest_index + 1
+    else:
+        if "heartbeat" in list_colon[0][0].lower():
+            del list_colon[0:5 * number_of_cpus]
+        if "llc" not in list_colon[93][0].lower():
+            found_llc_stats = False
+        if found_llc_stats:
+            for j in range(0, total_stats_length):
+                list_total_stats[j][1] = list_colon[0][1]
+                del list_colon[0]
+        else:
+            k = 0
+            for j in range(0, number_of_cpus):
+                while k < total_stats_length/(number_of_cpus-j) - 15:
+                    list_total_stats[k][1] = list_colon[0][1]
+                    del list_colon[0]
+                    k = k + 1
+                for n in range(k, int(total_stats_length/(number_of_cpus-j))):
+                    list_total_stats[n][1] = 0
+                k = k + 15
+        # Read ROI
+        if found_llc_stats:
+            for j in range(0, roi_stats_length):
+                list_roi_stats[j][1] = list_colon[0][1]
+                del list_colon[0]
+        else:
+            k = 0
+            for j in range(0, number_of_cpus):
+                while k < roi_stats_length/(number_of_cpus-j) - 23:
+                    list_roi_stats[k][1] = list_colon[0][1]
+                    del list_colon[0]
+                    k = k + 1
+                for n in range(k, int(roi_stats_length/(number_of_cpus-j))):
+                    list_roi_stats[n][1] = 0
+                k = k + 23
+        for j in range(0, dram_stats_length):
+            list_dram_stats[j][1] = list_colon[0][1]
+            del list_colon[0]
+        for j in range(0, branch_stats_length):
+            list_branch_prediction_stats[j][1] = list_colon[0][1]
+            del list_colon[0]
+        list_sim_times[0][1] = list_colon[0][1]
+        del list_colon[0]
+
+        if "finished" in list_colon[0][0].lower():
+            list_finished_stats = list_colon[0:finished_stats_length]
+            del list_colon[0:finished_stats_length]
+            for j in range(0, number_of_cpus):
+                list_finished_stats[1 + j * 4][0] = "finished_complete_cpu_" + str(j) + "_" + list_finished_stats[j * 4 + 1][0]
+                list_finished_stats[2 + j * 4][0] = "finished_complete_cpu_" + str(j) + "_" + list_finished_stats[j * 4 + 2][0]
+                list_finished_stats[3 + j * 4] = list_final_times[0]
+                del list_final_times[0]
+
+        # Fill Dataframe:
+        temp_df = pd.DataFrame()
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_system_info, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_branch_predictor, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_total_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_roi_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_dram_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_branch_prediction_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_sim_times, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_warmup_finished_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_finished_stats, columns=['Parameter', f'Value at tick {i+1}'])])
+
+        new_column = list(temp_df.pop(f"Value at tick {i+1}"))
+        results_df[f'Value at tick {i+1}'] = new_column
+        results_df = results_df.set_axis(temp_df['Parameter'], axis=0)
+
+# For debugging purposes:
+'''
+with pd.option_context('display.max_rows', None,
+                       'display.max_columns', None,
+                       'display.precision', 3,
+                       ):
+    print(results_df)
+
+# (should be NULL)
+for i in range(0, len(list_colon)):
+    print(list_colon)
 '''
 
-        if "cpu_" + str(i) + "_branch_prediction" in list_colon[j][0] and "cpu" not in list_colon[j+1][0]:
-            list_colon[j+1][0] = "cpu" + str(i) + "_" + list_colon[j+1][0]
-            list_colon[j+2][0] = "cpu" + str(i) + "_" + list_colon[j+2][0]
-            list_colon[j+3][0] = "cpu" + str(i) + "_" + list_colon[j+3][0]
-            list_colon[j+4][0] = "cpu" + str(i) + "_" + list_colon[j+4][0]
-            list_colon[j+5][0] = "cpu" + str(i) + "_" + list_colon[j+5][0]
-            list_colon[j+6][0] = "cpu" + str(i) + "_" + list_colon[j+6][0]
-            list_colon[j+7][0] = "cpu" + str(i) + "_" + list_colon[j+7][0]
-            list_colon[j+8][0] = "cpu" + str(i) + "_" + list_colon[j+8][0]
-
-current_dram_channel = 0
-for j in range(0, len(list_colon)):
-    if "_rq_row" in list_colon[j][0] and "dram_channel" not in list_colon[j][0]:
-        list_colon[j][0] = "dram_channel" + str(current_dram_channel) + list_colon[j][0]
-        list_colon[j+1][0] = "dram_channel" + str(current_dram_channel) + "_" + list_colon[j+1][0]
-        list_colon[j+2][0] = "dram_channel" + str(current_dram_channel) + list_colon[j+2][0]
-        list_colon[j+3][0] = "dram_channel" + str(current_dram_channel) + "_" + list_colon[j+3][0]
-        list_colon[j+4][0] = "dram_channel" + str(current_dram_channel) + "_" + list_colon[j+4][0]
-        list_colon[j+5][0] = "dram_channel" + str(current_dram_channel) + "_" + list_colon[j+5][0]
-        current_dram_channel = current_dram_channel + 1
-
-# Creating output DataFrame
-results_df = pd.DataFrame(list_trace_name, columns=['Parameter', 'Value at tick'])
-results_df = pd.concat([results_df, pd.DataFrame(list_time, columns=['Parameter', 'Value at tick'])])
-results_df = pd.concat([results_df, pd.DataFrame(list_branch_predictor, columns=['Parameter', 'Value at tick'])])
-results_df = pd.concat([results_df, pd.DataFrame(list_colon, columns=['Parameter', 'Value at tick'])])
+# Correction of the Dataframe printing indexes
+del results_df["Parameter"]
 
 # Print DataFrame to CSV output file
-# Check if file is empty
-file_is_empty = False
-if os.stat(path_to_results + filename + '.csv').st_size == 0:
-    file_is_empty = True
+results_df.to_csv(path_to_results + filename + '.csv', encoding='utf-8', index=True)
 
-if file_is_empty:
-    results_df.to_csv(path_to_results + filename + '.csv', encoding='utf-8', index=False)
-else:
-    results_csv = pd.read_csv(path_to_results + filename + '.csv')
-    new_column = list(results_df.pop("Value at tick"))
-    results_csv['new_column'] = new_column
-    results_csv.rename(columns={'new_column':'Value at Tick'}, inplace=True)
-    results_csv.to_csv(path_to_results + filename + '.csv', index=False)
+# CSV converter execution time
+print(f'\n---\tConverted to CSV in {(time.time() - start_time):.4f} seconds\t---\n<<<\t\t\tCheck {filename}.csv\t\t\t>>>')

@@ -59,7 +59,7 @@ def checked_default_csv():
     if use_default_CSV_state.get():
         filename_CSV_entry.configure(state='readonly')
         browse_btn.configure(state='disabled')
-        load_btn.configure(state='disabled')
+        load_btn.configure(state='normal')
         load_hint.set(default_filename)
     else:
         filename_CSV_entry.configure(state='normal')
@@ -155,7 +155,7 @@ browse_btn.configure(state='disabled')
 browse_btn.grid(row=2, column=3, padx=10, ipady=5)
 
 load_btn = tk.Button(load_file_lbl, text='Load results', font=button_font, width=10, command=load_file)
-load_btn.configure(state='disabled')
+load_btn.configure(state='normal')
 load_btn.grid(row=3, column=2, pady=30)
 
 # Basic system data LabelFrame

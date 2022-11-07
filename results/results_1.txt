@@ -7191,7 +7191,7 @@ cpu1_L2C TOTAL     ACCESS:          1  HIT:          1  MISS:          0
 cpu1_L2C LOAD      ACCESS:          1  HIT:          1  MISS:          0
 cpu1_L2C RFO       ACCESS:          0  HIT:          0  MISS:          0
 cpu1_L2C PREFETCH  ACCESS:          0  HIT:          0  MISS:          0
-cpu1_L2C WRITEBACK ACCESS:          0  HIT:          0  MISS:          0
+cpu1_L2C WRITEBACK ACCESS:          0  HIT:          0  MISS:          59555559
 
 Region of Interest Statistics
 
