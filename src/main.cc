@@ -21,7 +21,7 @@ uint8_t warmup_complete[NUM_CPUS] = {}, simulation_complete[NUM_CPUS] = {}, all_
         MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS, knob_cloudsuite = 0, knob_low_bandwidth = 0;
 
 uint64_t warmup_instructions = 1000000, simulation_instructions = 10000000;
-uint64_t cycle_interval = 100; // Default printing period is 100 cycles
+uint64_t cycle_interval = 1000; // Default printing period is 1000 cycles
 
 auto start_time = time(NULL);
 
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
   // Cycle counting
   uint64_t cycle_number = 0;
 
-  // Detection of last cycle for 
+  // Detection of last cycle
   bool last_cycle = false;
 
   // simulation entry point
@@ -480,48 +480,29 @@ int main(int argc, char** argv)
         finish_warmup();
       }
 
+      ooo_cpu[i]->finish_sim_instr = ooo_cpu[i]->num_retired - ooo_cpu[i]->begin_sim_instr;
+      ooo_cpu[i]->finish_sim_cycle = ooo_cpu[i]->current_cycle - ooo_cpu[i]->begin_sim_cycle;
+      
       // simulation complete
       if ((all_warmup_complete > NUM_CPUS) && (simulation_complete[i] == 0)
           && (ooo_cpu[i]->num_retired >= (ooo_cpu[i]->begin_sim_instr + simulation_instructions))) {
         simulation_complete[i] = 1;
-        ooo_cpu[i]->finish_sim_instr = ooo_cpu[i]->num_retired - ooo_cpu[i]->begin_sim_instr;
-        ooo_cpu[i]->finish_sim_cycle = ooo_cpu[i]->current_cycle - ooo_cpu[i]->begin_sim_cycle;
 
         cout << "Finished CPU " << i << " instructions: " << ooo_cpu[i]->finish_sim_instr << " cycles: " << ooo_cpu[i]->finish_sim_cycle;
         cout << " cumulative IPC: " << ((float)ooo_cpu[i]->finish_sim_instr / ooo_cpu[i]->finish_sim_cycle);
         cout << " (Simulation time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " << endl;
 
+    }
         for (auto it = caches.rbegin(); it != caches.rend(); ++it)
           record_roi_stats(i, *it);
       }
-    }
 
     if (cycle_number == cycle_interval || last_cycle) {
 
       cycle_number = 0;
-      cout << "Warmup Instructions: " << warmup_instructions << endl;
-      cout << "Simulation Instructions: " << simulation_instructions << endl;
-      cout << "Number of CPUs: " << NUM_CPUS << endl;
-
-      long long int dram_size = DRAM_CHANNELS * DRAM_RANKS * DRAM_BANKS * DRAM_ROWS * DRAM_COLUMNS * BLOCK_SIZE / 1024 / 1024; // in MiB
-      std::cout << "Off-chip DRAM Size: ";
-      if (dram_size > 1024)
-        std::cout << dram_size / 1024 << " GiB";
-      else
-        std::cout << dram_size << " MiB";
-      std::cout << " Channels: " << DRAM_CHANNELS << " Width: " << 8 * DRAM_CHANNEL_WIDTH << "-bit Data Rate: " << DRAM_IO_FREQ << " MT/s" << std::endl;
 
       std::cout << std::endl;
-      std::cout << "VirtualMemory physical capacity: " << std::size(vmem.ppage_free_list) * vmem.page_size;
-      std::cout << " num_ppages: " << std::size(vmem.ppage_free_list) << std::endl;
-      std::cout << "VirtualMemory page size: " << PAGE_SIZE << " log2_page_size: " << LOG2_PAGE_SIZE << std::endl;
-
-      std::cout << std::endl;
-      uint32_t cpu_iterator = 0;
-      for (int i = optind; i < argc; i++) {
-        std::cout << "CPU " << cpu_iterator++ << " runs " << argv[i] << std::endl;
-      }
-
+ 
       cout << endl << "ChampSim completed all CPUs" << endl;
       if (NUM_CPUS > 1) {
         cout << endl << "Total Simulation Statistics (not including warmup)" << endl;
@@ -555,6 +536,9 @@ int main(int argc, char** argv)
         print_branch_stats();
       #endif
        
+      // Print simulation time
+      cout << "(Simulation time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " << endl;
+      
       // Reset counters:
       for (uint32_t i = 0; i < NUM_CPUS; i++) {
 
