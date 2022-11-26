@@ -97,6 +97,7 @@ for i in range(0, system_info_length):
 
 for i in range(0, number_of_cpus):
     list_trace_name[i][0] = list_trace_name[i][0].lower().replace(" ", "_")
+    list_trace_name[i][0] = "system_info_" + list_trace_name[i][0].lower().replace(" ", "_")
     list_branch_predictor[i][0] = list_branch_predictor[i][0].lower().replace(" ", "_") + "_branch_predictor"
     list_final_times[i][0] = list_final_times[i][0].lower().replace(" ", "_") + "_time"
     list_final_times[i + number_of_cpus][0] = list_final_times[i + number_of_cpus][0].lower().replace(" ", "_") + "_time"
@@ -159,6 +160,7 @@ for i in range(0, number_of_results):
 
         # Fill Dataframe
         results_df = pd.concat([results_df, pd.DataFrame(list_system_info, columns=['Parameter', f'Value at tick {i+1}'])])
+        results_df = pd.concat([results_df, pd.DataFrame(list_trace_name, columns=['Parameter', f'Value at tick {i+1}'])])
         results_df = pd.concat([results_df, pd.DataFrame(list_branch_predictor, columns=['Parameter', f'Value at tick {i+1}'])])
         results_df = pd.concat([results_df, pd.DataFrame(list_total_stats, columns=['Parameter', f'Value at tick {i+1}'])])
         results_df = pd.concat([results_df, pd.DataFrame(list_roi_stats, columns=['Parameter', f'Value at tick {i+1}'])])
@@ -223,6 +225,7 @@ for i in range(0, number_of_results):
         # Fill Dataframe:
         temp_df = pd.DataFrame()
         temp_df = pd.concat([temp_df, pd.DataFrame(list_system_info, columns=['Parameter', f'Value at tick {i+1}'])])
+        temp_df = pd.concat([temp_df, pd.DataFrame(list_trace_name, columns=['Parameter', f'Value at tick {i+1}'])])
         temp_df = pd.concat([temp_df, pd.DataFrame(list_branch_predictor, columns=['Parameter', f'Value at tick {i+1}'])])
         temp_df = pd.concat([temp_df, pd.DataFrame(list_total_stats, columns=['Parameter', f'Value at tick {i+1}'])])
         temp_df = pd.concat([temp_df, pd.DataFrame(list_roi_stats, columns=['Parameter', f'Value at tick {i+1}'])])
@@ -257,3 +260,9 @@ results_df.to_csv(path_to_results + filename + '.csv', encoding='utf-8', index=T
 
 # CSV converter execution time
 print(f'\n---\tConverted to CSV in {(time.time() - start_time):.4f} seconds\t---\n<<<\t\t\tCheck {filename}.csv\t\t\t>>>')
+
+'''
+ Bugs:
+    - dram size text
+    - llc stats reading for each core
+'''
