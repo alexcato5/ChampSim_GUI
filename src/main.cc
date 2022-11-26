@@ -502,29 +502,29 @@ int main(int argc, char** argv)
       cycle_number = 0;
 
       std::cout << std::endl;
- 
-      cout << endl << "ChampSim completed all CPUs" << endl;
-      if (NUM_CPUS > 1) {
-        cout << endl << "Total Simulation Statistics (not including warmup)" << endl;
+      if (all_warmup_complete >= NUM_CPUS){
+        cout << endl << "ChampSim completed all CPUs" << endl;
+        if (NUM_CPUS > 1) {
+          cout << endl << "Total Simulation Statistics (not including warmup)" << endl;
+          for (uint32_t i = 0; i < NUM_CPUS; i++) {
+            cout << endl
+                 << "CPU " << i
+                 << " cumulative IPC: " << (float)(ooo_cpu[i]->num_retired - ooo_cpu[i]->begin_sim_instr) / (ooo_cpu[i]->current_cycle - ooo_cpu[i]->begin_sim_cycle);
+            cout << " instructions: " << ooo_cpu[i]->num_retired - ooo_cpu[i]->begin_sim_instr
+                 << " cycles: " << ooo_cpu[i]->current_cycle - ooo_cpu[i]->begin_sim_cycle << endl;
+            for (auto it = caches.rbegin(); it != caches.rend(); ++it)
+              print_sim_stats(i, *it);
+          }
+        }
+
+        cout << endl << "Region of Interest Statistics" << endl;
         for (uint32_t i = 0; i < NUM_CPUS; i++) {
-          cout << endl
-               << "CPU " << i
-               << " cumulative IPC: " << (float)(ooo_cpu[i]->num_retired - ooo_cpu[i]->begin_sim_instr) / (ooo_cpu[i]->current_cycle - ooo_cpu[i]->begin_sim_cycle);
-          cout << " instructions: " << ooo_cpu[i]->num_retired - ooo_cpu[i]->begin_sim_instr
-               << " cycles: " << ooo_cpu[i]->current_cycle - ooo_cpu[i]->begin_sim_cycle << endl;
+          cout << endl << "CPU " << i << " cumulative IPC: " << ((float)ooo_cpu[i]->finish_sim_instr / ooo_cpu[i]->finish_sim_cycle);
+          cout << " instructions: " << ooo_cpu[i]->finish_sim_instr << " cycles: " << ooo_cpu[i]->finish_sim_cycle << endl;
           for (auto it = caches.rbegin(); it != caches.rend(); ++it)
-            print_sim_stats(i, *it);
+            print_roi_stats(i, *it);
         }
       }
-
-      cout << endl << "Region of Interest Statistics" << endl;
-      for (uint32_t i = 0; i < NUM_CPUS; i++) {
-        cout << endl << "CPU " << i << " cumulative IPC: " << ((float)ooo_cpu[i]->finish_sim_instr / ooo_cpu[i]->finish_sim_cycle);
-        cout << " instructions: " << ooo_cpu[i]->finish_sim_instr << " cycles: " << ooo_cpu[i]->finish_sim_cycle << endl;
-        for (auto it = caches.rbegin(); it != caches.rend(); ++it)
-          print_roi_stats(i, *it);
-      }
-
       for (auto it = caches.rbegin(); it != caches.rend(); ++it)
         (*it)->impl_prefetcher_final_stats();
 
@@ -536,8 +536,10 @@ int main(int argc, char** argv)
         print_branch_stats();
       #endif
        
-      // Print simulation time
-      cout << "(Simulation time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " << endl;
+       if (all_warmup_complete >= NUM_CPUS){
+        // Print simulation time
+        cout << "(Simulation time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " << endl;
+      }
       
       // Reset counters:
       for (uint32_t i = 0; i < NUM_CPUS; i++) {
