@@ -531,10 +531,12 @@ int main(int argc, char** argv)
       for (auto it = caches.rbegin(); it != caches.rend(); ++it)
         (*it)->impl_replacement_final_stats();
 
-      #ifndef CRC2_COMPILE
-        print_dram_stats();
-        print_branch_stats();
-      #endif
+      if (all_warmup_complete >= NUM_CPUS){
+        #ifndef CRC2_COMPILE
+          print_dram_stats();
+          print_branch_stats();
+        #endif
+      }
        
        if (all_warmup_complete >= NUM_CPUS){
         // Print simulation time
