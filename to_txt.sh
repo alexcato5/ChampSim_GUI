@@ -17,6 +17,3 @@ $NULL | tee $csv_output_filename;
 
 # Run Simulator and redirect output to text file
 $simulation_command >> $text_output_filename;
-
-# Run python script to convert output text file to CSV file
-#python to_csv.py
