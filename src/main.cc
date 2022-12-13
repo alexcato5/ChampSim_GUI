@@ -21,7 +21,7 @@ uint8_t warmup_complete[NUM_CPUS] = {}, simulation_complete[NUM_CPUS] = {}, all_
         MAX_INSTR_DESTINATIONS = NUM_INSTR_DESTINATIONS, knob_cloudsuite = 0, knob_low_bandwidth = 0;
 
 uint64_t warmup_instructions = 1000000, simulation_instructions = 10000000;
-uint64_t cycle_interval = 1000; // Default printing period is 1000 cycles
+uint64_t cycle_interval = 10000; // Default printing period is 1000 cycles
 
 auto start_time = time(NULL);
 
@@ -406,7 +406,6 @@ int main(int argc, char** argv)
     (*it)->impl_replacement_initialize();
   }
 
-// Atención
   // After cycle_interval cycles ChampSim prints the results and resets the counters
  
   // Cycle counting
