@@ -106,6 +106,12 @@ for i in range(0, len(list_colon)):
     list_colon[i][0] = list_colon[i][0].lower().replace(" ", "_")
     list_colon[i][0] = list_colon[i][0].lower().replace("-", "_")
     list_colon[i][0] = list_colon[i][0].lower().replace("(", "")
+    list_colon[i][0] = list_colon[i][0].lower().replace("__", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("___", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("____", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("_____", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("______", "_")
+    list_colon[i][0] = list_colon[i][0].lower().replace("_______", "_")
 
 # Define the number of list_colon entries taken by stats
 warmup_finished_stats_length = 3 * number_of_cpus
@@ -157,6 +163,68 @@ for i in range(0, number_of_results):
         del list_colon[0:branch_stats_length]
         list_sim_times[0][1] = list_colon[0][1]
         del list_colon[0]
+
+        for j in range(0, len(list_total_stats)):
+            if 'hit' in list_total_stats[j][0].lower():
+                list_total_stats[j][0] = list_total_stats[j-1][0] + '_' + list_total_stats[j][0]
+            elif 'miss' in list_total_stats[j][0].lower():
+                list_total_stats[j][0] = list_total_stats[j-2][0] + '_' + list_total_stats[j][0]
+            elif 'instructions' in list_total_stats[j][0].lower():
+                list_total_stats[j][0] = list_total_stats[j-1][0] + '_' + list_total_stats[j][0]
+            elif 'cycles' in list_total_stats[j][0].lower():
+                list_total_stats[j][0] = list_total_stats[j-2][0] + '_' + list_total_stats[j][0]
+            elif 'llc' in list_total_stats[j][0].lower() and 'cpu' not in list_total_stats[j][0].lower():
+                list_total_stats[j][0] = list_total_stats[j-1][0][0:16] + '_' + list_total_stats[j][0]
+            elif 'total_stats' not in list_total_stats[j][0].lower():
+                list_total_stats[j][0] = "total_stats_" + list_total_stats[j][0]
+
+        for j in range(0, len(list_roi_stats)):
+            if 'hit' in list_roi_stats[j][0].lower() and '_hit' not in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-1][0] + '_' + list_roi_stats[j][0]
+            elif 'miss' in list_roi_stats[j][0].lower() and '_miss' not in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-2][0] + '_' + list_roi_stats[j][0]
+            elif 'instructions' in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-1][0] + '_' + list_roi_stats[j][0]
+            elif 'cycles' in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-2][0] + '_' + list_roi_stats[j][0]
+            elif 'issued' in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-1][0] + '_' + list_roi_stats[j][0]
+            elif 'useful' in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-2][0] + '_' + list_roi_stats[j][0]
+            elif 'useless' in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-3][0] + '_' + list_roi_stats[j][0]
+            elif 'llc' in list_roi_stats[j][0].lower() and 'cpu' not in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = list_roi_stats[j-1][0][0:14] + '_' + list_roi_stats[j][0]
+            elif 'roi_stats' not in list_roi_stats[j][0].lower():
+                list_roi_stats[j][0] = "roi_stats_" + list_roi_stats[j][0]
+
+        for j in range(0, number_of_DRAM_channels):
+            counter = 1
+            for k in range(0, len(list_dram_stats)):
+                if counter < 7 and 'dram_stats' not in list_dram_stats[k][0]:
+                    list_dram_stats[k][0] = "dram_stats_channel_" + str(j) + "_" + list_dram_stats[k][0]
+                    counter = counter + 1
+        list_dram_stats[-1][0] = "dram_stats_" + list_dram_stats[-1][0]
+
+        for j in range(0, len(list_branch_prediction_stats)):
+            if '%' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-1][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'average_rob' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-2][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'branch_direct_jump' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-3][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'branch_indirect' == list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-4][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'branch_conditional' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-5][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif '_direct_call' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-6][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'indirect_call' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-7][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'return' in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = list_branch_prediction_stats[j-8][0][0:29] + '_' + list_branch_prediction_stats[j][0]
+            elif 'branch_prediction_stats' not in list_branch_prediction_stats[j][0].lower():
+                list_branch_prediction_stats[j][0] = "branch_prediction_stats_" + list_branch_prediction_stats[j][0]
 
         # Fill Dataframe
         results_df = pd.concat([results_df, pd.DataFrame(list_system_info, columns=['Parameter', f'Value at tick {i+1}'])])
@@ -239,19 +307,6 @@ for i in range(0, number_of_results):
         results_df[f'Value at tick {i+1}'] = new_column
         results_df = results_df.set_axis(temp_df['Parameter'], axis=0)
 
-# For debugging purposes:
-'''
-with pd.option_context('display.max_rows', None,
-                       'display.max_columns', None,
-                       'display.precision', 3,
-                       ):
-    print(results_df)
-
-# (should be NULL)
-for i in range(0, len(list_colon)):
-    print(list_colon)
-'''
-
 # Correction of the Dataframe printing indexes
 del results_df["Parameter"]
 
@@ -260,9 +315,3 @@ results_df.to_csv(path_to_results + filename + '.csv', encoding='utf-8', index=T
 
 # CSV converter execution time
 print(f'\n---\tConverted to CSV in {(time.time() - start_time):.4f} seconds\t---\n<<<\t\t\tCheck {filename}.csv\t\t\t>>>')
-
-'''
- Bugs:
-    - dram size text
-    - llc stats reading for each core
-'''
