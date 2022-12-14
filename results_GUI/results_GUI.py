@@ -435,7 +435,7 @@ def cpus_as_second_source():
 def cpu_as_source_time():
     # Forget all previous widgets
     choose_time_lbl.grid_forget()
-    combobox_selector_second_source.grid_forget()
+    combobox_selector_time.grid_forget()
 
     if valid_data:
         # Show all widgets
@@ -523,9 +523,12 @@ def dram_as_source_time():
     else:
         results_source_time.set(0)
 
+
 def open_counter_plot():
+    global x_axis_counter
+    global y_axis_counter
     axI.clear()
-    axI.plot(x_axis_counter,y_axis_counter,'-m',label='Parameter vs. Parameter')
+    axI.scatter(x_axis_counter, y_axis_counter,label='Parameter vs. Parameter')
     axI.legend()
     axI.set_xlabel(f'{combobox_selector_second_source.get()}')
     axI.set_ylabel(f'{combobox_selector_first_source.get()}')
@@ -648,7 +651,7 @@ def plot_counter():
             y_axis_counter = [float(y) for y in y_axis_counter]
         except:
             mb.showerror(message='An error occurred while plotting. Please try again', title='Plotting error')
-        ax1.plot(x_axis_counter, y_axis_counter)
+        ax1.scatter(x_axis_counter, y_axis_counter)
 
         if scalingFactor < 1.28:
             plt.rcParams.update({'font.size': 7})
@@ -932,7 +935,7 @@ if scalingFactor < 1.28:
     canvas_time_tiny.get_tk_widget().config(width=scalingFactor*350*0.7, height=scalingFactor*310*0.7)
 else:
     canvas_vs_tiny = FigureCanvasTkAgg(fig_vs, master=plots_lblfr)
-    canvas_vs_tiny.get_tk_widget().config(width=400, height=350)
+    canvas_vs_tiny.get_tk_widget().config(width=400, height=375)
 
     canvas_time_tiny = FigureCanvasTkAgg(fig_time, master=plots_lblfr)
     canvas_time_tiny.get_tk_widget().config(width=400, height=375)
