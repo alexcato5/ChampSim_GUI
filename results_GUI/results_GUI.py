@@ -685,7 +685,9 @@ def plot_time():
         axII.set_ylabel(combobox_selector_time.get())
         global x_axis_time
         global time_labels
+        global y_axis_time
         x_axis_time = []
+        nan_found = False
         try:
             y_axis_time_temp = results_dataframe.loc[combobox_selector_time.get()].tolist()
             x_axis_time = list(np.arange(0, len(y_axis_time_temp)))
@@ -695,11 +697,15 @@ def plot_time():
                 if '-' in y_axis_time_temp[j] or 'n' in y_axis_time_temp[j]:
                     del x_axis_time[j]
                     del y_axis_time_temp[j]
+                    for i in range(0, len(y_axis_time)):
+                        del y_axis_time[i][j]
                     axis_len = axis_len - 1
-                    mb.showwarning(message='Some datapoints were removed while plotting because they contained NaN values', title='NaN values detected')
+                    j = j - 1
+                    nan_found = True
                 j = j + 1
+            if nan_found:
+                mb.showwarning(message='Some datapoints were removed while plotting because they contained NaN values', title='NaN values detected')
             x_axis_time = [float(x) for x in x_axis_time]
-            global y_axis_time
             y_axis_time.append([float(y) for y in y_axis_time_temp])
         except:
             mb.showerror(message='An error occurred while plotting. Please try again', title='Plotting error')
